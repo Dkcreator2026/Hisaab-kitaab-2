@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hisaab Kitaab - Digital Khata</title>
+  <meta name="theme-color" content="#0f172a" />
 
-  <!-- Tailwind -->
+  <title>Digital Khata - Hisaab Kitaab</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- React -->
+  <!-- React 18 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
@@ -27,1643 +29,2238 @@
 
     body {
       margin: 0;
-      background: #f5f7fb;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background: #f8fafc;
       color: #0f172a;
-      font-family: Arial, Helvetica, sans-serif;
     }
 
     button,
     input,
-    select {
+    select,
+    textarea {
       font: inherit;
     }
 
-    .card {
-      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+    .glass {
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .card-shadow {
+      box-shadow:
+        0 10px 30px rgba(15, 23, 42, .07),
+        0 2px 8px rgba(15, 23, 42, .04);
+    }
+
+    .gradient-bg {
+      background:
+        radial-gradient(circle at top right, rgba(59,130,246,.20), transparent 35%),
+        radial-gradient(circle at bottom left, rgba(16,185,129,.15), transparent 35%),
+        #f8fafc;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .fade-in {
+      animation: fadeIn .25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 99px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
   </style>
 </head>
 
 <body>
-
-<div id="root"></div>
-
-<script>
-/*
-=========================================================
-FIREBASE CONFIGURATION
-=========================================================
-
-Firebase Console:
-Project settings
-→ Your apps
-→ Web app
-→ Firebase SDK configuration
-
-Realtime Database URL example:
-https://your-project-default-rtdb.firebaseio.com
-
-Replace ALL values below.
-*/
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCVgE4CNGUpsDlfgZMRqVzFtyauzysPpJ4",
-  authDomain: "realtime-hisab-kitab.firebaseapp.com",
-  projectId: "realtime-hisab-kitab",
-  storageBucket: "realtime-hisab-kitab.firebasestorage.app",
-  messagingSenderId: "238999762218",
-  appId: "1:238999762218:web:8127bbe6bea5480e0d9a53"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-  
-/*
-=========================================================
-ADMIN EMAIL
-=========================================================
-
-Firebase Authentication में जिस email को Admin बनाना है,
-वही email यहाँ डालें.
-*/
-
-const ADMIN_EMAIL = "";
-
-
-/*
-=========================================================
-FIREBASE INITIALIZATION
-=========================================================
-*/
-
-const firebaseConfigured =
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.databaseURL &&
-  firebaseConfig.projectId &&
-  firebaseConfig.appId;
-
-let auth = null;
-let database = null;
-
-if (firebaseConfigured) {
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-
-  auth = firebase.auth();
-  database = firebase.database();
-}
-</script>
-
-
-<script type="text/babel">
-
-const {
-  useEffect,
-  useMemo,
-  useState
-} = React;
-
-
-/* ======================================================
-   HELPERS
-====================================================== */
-
-function money(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2
-  }).format(Number(value) || 0);
-}
-
-
-function formatDate(timestamp) {
-
-  if (!timestamp) {
-    return "—";
-  }
-
-  const date = new Date(timestamp);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(date);
-}
-
-
-/* ======================================================
-   SETUP SCREEN
-====================================================== */
-
-function SetupScreen() {
-
-  return (
-    <main className="min-h-screen flex items-center justify-center p-5">
-
-      <div className="card bg-white rounded-3xl p-7 max-w-2xl w-full">
-
-        <div className="text-5xl mb-4">
-          📒
-        </div>
-
-        <h1 className="text-3xl font-extrabold">
-          Hisaab Kitaab
-        </h1>
-
-        <p className="text-slate-600 mt-2">
-          Firebase Realtime Database setup required.
-        </p>
-
-        <div className="mt-6 bg-slate-50 rounded-2xl p-5">
-
-          <p className="font-bold mb-3">
-            Firebase configuration भरें:
-          </p>
-
-          <pre className="text-xs overflow-auto whitespace-pre-wrap">
-{`const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.firebasestorage.app",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-const ADMIN_EMAIL = "admin@example.com";`}
-          </pre>
-
-        </div>
-
-        <div className="mt-5 bg-blue-50 text-blue-800 rounded-2xl p-4 text-sm">
-
-          <b>Firebase में enable करें:</b>
-
-          <ul className="list-disc ml-5 mt-2 space-y-1">
-            <li>Authentication → Email/Password</li>
-            <li>Realtime Database</li>
-            <li>Web App</li>
-          </ul>
-
-        </div>
-
-      </div>
-
-    </main>
-  );
-}
-
-
-/* ======================================================
-   LOGIN
-====================================================== */
-
-function LoginScreen({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  onLogin,
-  loading,
-  error
-}) {
-
-  return (
-
-    <main className="min-h-screen flex items-center justify-center p-5">
-
-      <div className="card bg-white rounded-3xl p-7 max-w-md w-full">
-
-        <div className="text-center mb-7">
-
-          <div className="text-5xl">
-            📒
-          </div>
-
-          <h1 className="text-3xl font-extrabold mt-3">
-            Hisaab Kitaab
-          </h1>
-
-          <p className="text-slate-500">
-            Digital Khata
-          </p>
-
-        </div>
-
-
-        <form
-          onSubmit={onLogin}
-          className="space-y-4"
-        >
-
-          <input
-            required
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-
-          <input
-            required
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-
-          {error && (
-
-            <div className="bg-red-50 text-red-700 p-3 rounded-xl text-sm">
-              {error}
-            </div>
-
-          )}
-
-
-          <button
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3 font-semibold disabled:opacity-60"
-          >
-            {loading ? "Please wait..." : "Login"}
-          </button>
-
-        </form>
-
-      </div>
-
-    </main>
-  );
-}
-
-
-/* ======================================================
-   HEADER
-====================================================== */
-
-function Header({
-  title,
-  user,
-  onLogout
-}) {
-
-  return (
-
-    <header className="bg-white border-b">
-
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-
-        <div>
-
-          <h1 className="font-extrabold text-xl">
-            {title}
-          </h1>
-
-          <p className="text-xs text-slate-500">
-            {user?.email}
-          </p>
-
-        </div>
-
-
-        <button
-          onClick={onLogout}
-          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200"
-        >
-          Logout
-        </button>
-
-      </div>
-
-    </header>
-
-  );
-}
-
-
-/* ======================================================
-   ADMIN DASHBOARD
-====================================================== */
-
-function AdminDashboard({
-  user,
-  members,
-  entries,
-  onLogout,
-  reload,
-  error,
-  setError
-}) {
-
-  const [memberName, setMemberName] = useState("");
-  const [memberEmail, setMemberEmail] = useState("");
-
-  const [selectedMember, setSelectedMember] = useState("");
-
-  const [amount, setAmount] = useState("");
-  const [entryType, setEntryType] = useState("gave");
-  const [note, setNote] = useState("");
-
-  const [loading, setLoading] = useState(false);
-
-
-  function memberStats(memberId) {
-
-    const memberEntries = entries.filter(
-      entry => entry.memberId === memberId
-    );
-
-    const gave = memberEntries
-      .filter(entry => entry.type === "gave")
-      .reduce(
-        (sum, entry) => sum + Number(entry.amount || 0),
-        0
-      );
-
-    const got = memberEntries
-      .filter(entry => entry.type === "got")
-      .reduce(
-        (sum, entry) => sum + Number(entry.amount || 0),
-        0
-      );
-
-    return {
-      gave,
-      got,
-      net: gave - got
+  <div id="root"></div>
+
+  <script type="text/babel">
+
+    /* =========================================================
+       FIREBASE CONFIGURATION
+       ========================================================= */
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCVgE4CNGUpsDlfgZMRqVzFtyauzysPpJ4",
+      authDomain: "realtime-hisab-kitab.firebaseapp.com",
+      databaseURL: "https://realtime-hisab-kitab-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "realtime-hisab-kitab",
+      storageBucket: "realtime-hisab-kitab.firebasestorage.app",
+      messagingSenderId: "238999762218",
+      appId: "1:238999762218:web:8127bbe6bea5480e0d9a53"
     };
-  }
 
+    const ADMIN_EMAIL = "dk7508592@gmail.com";
 
-  async function addMember(event) {
+    /* =========================================================
+       FIREBASE INITIALIZATION
+       ========================================================= */
 
-    event.preventDefault();
-
-    setError("");
-
-    if (!memberName.trim()) {
-      setError("Member name डालें.");
-      return;
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
     }
 
-    if (!memberEmail.trim()) {
-      setError("Member email डालें.");
-      return;
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const {
+      useState,
+      useEffect,
+      useMemo,
+      useRef
+    } = React;
+
+    /* =========================================================
+       HELPERS
+       ========================================================= */
+
+    function money(value) {
+      const amount = Number(value || 0);
+
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 2
+      }).format(amount);
     }
 
-    setLoading(true);
+    function formatDate(timestamp) {
+      if (!timestamp) return "-";
 
-    try {
+      const date = new Date(Number(timestamp));
 
-      const memberRef =
-        database.ref("members").push();
+      if (Number.isNaN(date.getTime())) return "-";
 
-      await memberRef.set({
-        name: memberName.trim(),
-        email: memberEmail.trim().toLowerCase(),
-        createdAt: Date.now()
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function dateOnly(timestamp) {
+      if (!timestamp) return "-";
+
+      const date = new Date(Number(timestamp));
+
+      if (Number.isNaN(date.getTime())) return "-";
+
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    function normalizeEmail(email) {
+      return String(email || "").trim().toLowerCase();
+    }
+
+    function sanitizePhone(phone) {
+      return String(phone || "").replace(/\D/g, "");
+    }
+
+    function escapeWhatsAppText(text) {
+      return encodeURIComponent(text);
+    }
+
+    function generateWhatsAppLink(member, summary) {
+      const phone = sanitizePhone(member.phone);
+
+      if (!phone) return null;
+
+      let message = `Namaste ${member.name || ""},%0A%0A`;
+
+      if (summary.balance > 0) {
+        message += `Aapke hisaab ke mutabik aapko ₹${summary.balance.toFixed(2)} dene hain.`;
+      } else if (summary.balance < 0) {
+        message += `Aapke hisaab ke mutabik aapko ₹${Math.abs(summary.balance).toFixed(2)} lene hain.`;
+      } else {
+        message += `Aapka hisaab filhaal barabar hai.`;
+      }
+
+      message += `%0A%0A`;
+      message += `Maine diye: ₹${summary.given.toFixed(2)}%0A`;
+      message += `Mujhe mile: ₹${summary.received.toFixed(2)}%0A`;
+      message += `Net balance: ₹${Math.abs(summary.balance).toFixed(2)}%0A%0A`;
+      message += `Dhanyavaad.`;
+
+      const countryPhone =
+        phone.startsWith("91") ? phone : "91" + phone;
+
+      return `https://wa.me/${countryPhone}?text=${message}`;
+    }
+
+    function calculateSummary(entries) {
+      let given = 0;
+      let received = 0;
+
+      entries.forEach(entry => {
+        const amount = Number(entry.amount || 0);
+
+        if (entry.type === "given") {
+          given += amount;
+        }
+
+        if (entry.type === "received") {
+          received += amount;
+        }
       });
 
-      setMemberName("");
-      setMemberEmail("");
+      /*
+        Positive = member ko dena hai
+        Negative = member se lena hai
+      */
+      const balance = given - received;
 
-      await reload();
-
-    } catch (error) {
-
-      setError(error.message);
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  }
-
-
-  async function addEntry(event) {
-
-    event.preventDefault();
-
-    setError("");
-
-    if (!selectedMember) {
-      setError("Member select करें.");
-      return;
+      return {
+        given,
+        received,
+        balance
+      };
     }
 
-    if (Number(amount) <= 0) {
-      setError("Valid amount डालें.");
-      return;
+    function getInitials(name) {
+      const value = String(name || "U").trim();
+
+      if (!value) return "U";
+
+      const parts = value.split(/\s+/);
+
+      if (parts.length === 1) {
+        return parts[0].slice(0, 2).toUpperCase();
+      }
+
+      return (
+        parts[0][0] +
+        parts[parts.length - 1][0]
+      ).toUpperCase();
     }
 
-    setLoading(true);
+    function friendlyFirebaseError(error) {
+      const code = error?.code || "";
 
-    try {
+      const messages = {
+        "auth/invalid-credential":
+          "Email ya password galat hai.",
+        "auth/invalid-login-credentials":
+          "Email ya password galat hai.",
+        "auth/user-not-found":
+          "Is email ka Firebase account nahi mila.",
+        "auth/wrong-password":
+          "Password galat hai.",
+        "auth/email-already-in-use":
+          "Ye email pehle se registered hai.",
+        "auth/weak-password":
+          "Password kam se kam 6 characters ka hona chahiye.",
+        "auth/invalid-email":
+          "Email address sahi nahi hai.",
+        "auth/network-request-failed":
+          "Internet connection check kijiye.",
+        "PERMISSION_DENIED":
+          "Firebase Realtime Database Rules ne access deny kiya hai."
+      };
 
-      const entryRef =
-        database.ref("entries").push();
-
-      await entryRef.set({
-
-        memberId: selectedMember,
-
-        amount: Number(amount),
-
-        type: entryType,
-
-        note: note.trim(),
-
-        createdAt: Date.now(),
-
-        createdBy: user.email
-
-      });
-
-      setAmount("");
-      setNote("");
-
-      await reload();
-
-    } catch (error) {
-
-      setError(error.message);
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  }
-
-
-  async function deleteEntry(entryId) {
-
-    const confirmed =
-      window.confirm("Kya aap ye entry delete karna chahte hain?");
-
-    if (!confirmed) {
-      return;
+      return messages[code] || error?.message || "Kuch galat ho gaya.";
     }
 
-    try {
+    /* =========================================================
+       LOADING
+       ========================================================= */
 
-      await database
-        .ref("entries/" + entryId)
-        .remove();
-
-      await reload();
-
-    } catch (error) {
-
-      setError(error.message);
-
+    function LoadingScreen({ text = "Loading..." }) {
+      return (
+        <div className="min-h-screen flex items-center justify-center gradient-bg">
+          <div className="text-center">
+            <div className="spinner mx-auto mb-4"></div>
+            <p className="text-slate-600 font-medium">{text}</p>
+          </div>
+        </div>
+      );
     }
-  }
 
-
-  const totalGave = members.reduce(
-    (sum, member) =>
-      sum + memberStats(member.id).gave,
-    0
-  );
-
-
-  const totalGot = members.reduce(
-    (sum, member) =>
-      sum + memberStats(member.id).got,
-    0
-  );
-
-
-  return (
-
-    <>
-
-      <Header
-        title="Admin Dashboard"
-        user={user}
-        onLogout={onLogout}
-      />
-
-
-      <main className="max-w-7xl mx-auto p-4 space-y-5">
-
-
-        {error && (
-
-          <div className="bg-red-50 text-red-700 p-4 rounded-xl">
-            {error}
-          </div>
-
-        )}
-
-
-        {/* STATS */}
-
-        <section className="grid md:grid-cols-3 gap-4">
-
-          <div className="card bg-white rounded-2xl p-5">
-
-            <p className="text-slate-500">
-              Members
-            </p>
-
-            <p className="text-2xl font-bold mt-1">
-              {members.length}
-            </p>
-
-          </div>
-
-
-          <div className="card bg-white rounded-2xl p-5">
-
-            <p className="text-slate-500">
-              Maine diye
-            </p>
-
-            <p className="text-2xl font-bold mt-1">
-              {money(totalGave)}
-            </p>
-
-          </div>
-
-
-          <div className="card bg-white rounded-2xl p-5">
-
-            <p className="text-slate-500">
-              Mujhe mile
-            </p>
-
-            <p className="text-2xl font-bold mt-1">
-              {money(totalGot)}
-            </p>
-
-          </div>
-
-        </section>
-
-
-        {/* ADD FORMS */}
-
-        <section className="grid lg:grid-cols-2 gap-5">
-
-
-          {/* MEMBER */}
-
-          <div className="card bg-white rounded-2xl p-5">
-
-            <h2 className="font-bold text-lg mb-4">
-              Add Member
-            </h2>
-
-
-            <form
-              onSubmit={addMember}
-              className="space-y-3"
-            >
-
-              <input
-                required
-                placeholder="Member name"
-                value={memberName}
-                onChange={e =>
-                  setMemberName(e.target.value)
-                }
-                className="w-full border rounded-xl px-4 py-3"
-              />
-
-
-              <input
-                required
-                type="email"
-                placeholder="Member login email"
-                value={memberEmail}
-                onChange={e =>
-                  setMemberEmail(e.target.value)
-                }
-                className="w-full border rounded-xl px-4 py-3"
-              />
-
-
-              <button
-                disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3"
-              >
-                Add Member
-              </button>
-
-            </form>
-
-          </div>
-
-
-          {/* ENTRY */}
-
-          <div className="card bg-white rounded-2xl p-5">
-
-            <h2 className="font-bold text-lg mb-4">
-              Add Ledger Entry
-            </h2>
-
-
-            <form
-              onSubmit={addEntry}
-              className="space-y-3"
-            >
-
-              <select
-                required
-                value={selectedMember}
-                onChange={e =>
-                  setSelectedMember(e.target.value)
-                }
-                className="w-full border rounded-xl px-4 py-3"
-              >
-
-                <option value="">
-                  Select member
-                </option>
-
-                {members.map(member => (
-
-                  <option
-                    key={member.id}
-                    value={member.id}
-                  >
-                    {member.name}
-                  </option>
-
-                ))}
-
-              </select>
-
-
-              <select
-                value={entryType}
-                onChange={e =>
-                  setEntryType(e.target.value)
-                }
-                className="w-full border rounded-xl px-4 py-3"
-              >
-
-                <option value="gave">
-                  Maine diye
-                </option>
-
-                <option value="got">
-                  Mujhe mile
-                </option>
-
-              </select>
-
-
-              <input
-                required
-                min="0.01"
-                type="number"
-                step="0.01"
-                placeholder="Amount ₹"
-                value={amount}
-                onChange={e =>
-                  setAmount(e.target.value)
-                }
-                className="w-full border rounded-xl px-4 py-3"
-              />
-
-
-              <input
-                placeholder="Note"
-                value={note}
-                onChange={e =>
-                  setNote(e.target.value)
-                }
-                className="w-full border rounded-xl px-4 py-3"
-              />
-
-
-              <button
-                disabled={loading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3"
-              >
-                Save Entry
-              </button>
-
-            </form>
-
-          </div>
-
-        </section>
-
-
-        {/* MEMBERS */}
-
-        <section className="card bg-white rounded-2xl overflow-hidden">
-
-          <div className="p-5 border-b">
-
-            <h2 className="font-bold text-lg">
-              Members
-            </h2>
-
-          </div>
-
-
-          {members.length === 0 ? (
-
-            <p className="p-6 text-slate-500">
-              Abhi koi member nahi hai.
-            </p>
-
-          ) : (
-
-            <div className="divide-y">
-
-              {members.map(member => {
-
-                const stats =
-                  memberStats(member.id);
-
-                return (
-
-                  <div
-                    key={member.id}
-                    className="p-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4"
-                  >
-
-                    <div>
-
-                      <h3 className="font-bold text-lg">
-                        {member.name}
-                      </h3>
-
-                      <p className="text-sm text-slate-500">
-                        {member.email}
-                      </p>
-
-                    </div>
-
-
-                    <div className="flex flex-wrap gap-3 items-center text-sm">
-
-                      <span>
-                        Diye:
-                        <b className="ml-1">
-                          {money(stats.gave)}
-                        </b>
-                      </span>
-
-
-                      <span>
-                        Mile:
-                        <b className="ml-1">
-                          {money(stats.got)}
-                        </b>
-                      </span>
-
-
-                      <span
-                        className={
-                          stats.net >= 0
-                            ? "text-emerald-700"
-                            : "text-red-700"
-                        }
-                      >
-
-                        Balance:
-                        <b className="ml-1">
-                          {money(Math.abs(stats.net))}
-                        </b>
-
-                        <span className="ml-1">
-                          {stats.net >= 0
-                            ? "lene hain"
-                            : "dene hain"}
-                        </span>
-
-                      </span>
-
-
-                      <a
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        href={
-                          "https://wa.me/?text=" +
-                          encodeURIComponent(
-                            "Hisaab Kitaab\n\n" +
-                            "Member: " +
-                            member.name +
-                            "\n\n" +
-                            "Balance: " +
-                            money(Math.abs(stats.net)) +
-                            " " +
-                            (
-                              stats.net >= 0
-                                ? "lene hain"
-                                : "dene hain"
-                            )
-                          )
-                        }
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg"
-                      >
-                        WhatsApp
-                      </a>
-
-                    </div>
-
-                  </div>
-
-                );
-
-              })}
-
-            </div>
-
-          )}
-
-        </section>
-
-
-        {/* LEDGER */}
-
-        <section className="card bg-white rounded-2xl overflow-hidden">
-
-          <div className="p-5 border-b">
-
-            <h2 className="font-bold text-lg">
-              Ledger
-            </h2>
-
-          </div>
-
-
-          {entries.length === 0 ? (
-
-            <p className="p-6 text-slate-500">
-              Abhi koi ledger entry nahi hai.
-            </p>
-
-          ) : (
-
-            <div className="divide-y">
-
-              {entries.map(entry => {
-
-                const member =
-                  members.find(
-                    m => m.id === entry.memberId
-                  );
-
-                return (
-
-                  <div
-                    key={entry.id}
-                    className="p-4 flex flex-col sm:flex-row sm:justify-between gap-3"
-                  >
-
-                    <div>
-
-                      <b>
-                        {member?.name || "Member"}
-                      </b>
-
-                      <p className="text-sm text-slate-500">
-                        {entry.note || "No note"}
-                        {" · "}
-                        {formatDate(entry.createdAt)}
-                      </p>
-
-                    </div>
-
-
-                    <div
-                      className={
-                        entry.type === "gave"
-                          ? "text-emerald-700"
-                          : "text-red-700"
-                      }
-                    >
-
-                      {entry.type === "gave"
-                        ? "+"
-                        : "−"}
-
-                      {money(entry.amount)}
-
-
-                      <button
-                        onClick={() =>
-                          deleteEntry(entry.id)
-                        }
-                        className="ml-4 text-xs text-red-600 hover:underline"
-                      >
-                        Delete
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                );
-
-              })}
-
-            </div>
-
-          )}
-
-        </section>
-
-      </main>
-
-    </>
-
-  );
-}
-
-
-/* ======================================================
-   MEMBER PASSBOOK
-====================================================== */
-
-function MemberPassbook({
-  user,
-  member,
-  entries,
-  onLogout
-}) {
-
-  const gave = entries
-    .filter(entry => entry.type === "gave")
-    .reduce(
-      (sum, entry) =>
-        sum + Number(entry.amount || 0),
-      0
-    );
-
-
-  const got = entries
-    .filter(entry => entry.type === "got")
-    .reduce(
-      (sum, entry) =>
-        sum + Number(entry.amount || 0),
-      0
-    );
-
-
-  const balance = gave - got;
-
-
-  return (
-
-    <>
-
-      <Header
-        title={"Passbook · " + member.name}
-        user={user}
-        onLogout={onLogout}
-      />
-
-
-      <main className="max-w-3xl mx-auto p-4 space-y-5">
-
-
-        <section className="grid grid-cols-3 gap-3">
-
-          <div className="card bg-white rounded-2xl p-4">
-
-            <p className="text-xs text-slate-500">
-              Maine diye
-            </p>
-
-            <b>
-              {money(gave)}
-            </b>
-
-          </div>
-
-
-          <div className="card bg-white rounded-2xl p-4">
-
-            <p className="text-xs text-slate-500">
-              Mujhe mile
-            </p>
-
-            <b>
-              {money(got)}
-            </b>
-
-          </div>
-
-
-          <div className="card bg-white rounded-2xl p-4">
-
-            <p className="text-xs text-slate-500">
-              Balance
-            </p>
-
-            <b>
-              {money(Math.abs(balance))}
-            </b>
-
-          </div>
-
-        </section>
-
-
-        <section className="card bg-white rounded-2xl overflow-hidden">
-
-          <div className="p-5 border-b">
-
-            <h2 className="font-bold text-lg">
-              My Passbook
-            </h2>
-
-          </div>
-
-
-          {entries.length === 0 ? (
-
-            <p className="p-6 text-slate-500">
-              Abhi koi entry nahi hai.
-            </p>
-
-          ) : (
-
-            <div className="divide-y">
-
-              {entries.map(entry => (
-
-                <div
-                  key={entry.id}
-                  className="p-5 flex justify-between gap-4"
-                >
-
-                  <div>
-
-                    <b>
-                      {entry.type === "gave"
-                        ? "Maine diye"
-                        : "Mujhe mile"}
-                    </b>
-
-                    <p className="text-sm text-slate-500">
-                      {entry.note || "No note"}
-                      {" · "}
-                      {formatDate(entry.createdAt)}
-                    </p>
-
-                  </div>
-
-
-                  <strong
-                    className={
-                      entry.type === "gave"
-                        ? "text-emerald-700"
-                        : "text-red-700"
-                    }
-                  >
-                    {money(entry.amount)}
-                  </strong>
-
+    /* =========================================================
+       TOAST
+       ========================================================= */
+
+    function Toast({ toast, onClose }) {
+      if (!toast) return null;
+
+      const success = toast.type === "success";
+
+      return (
+        <div className="fixed top-4 right-4 z-[100] max-w-sm fade-in">
+          <div
+            className={
+              "rounded-2xl px-4 py-3 shadow-xl border " +
+              (success
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                : "bg-red-50 border-red-200 text-red-800")
+            }
+          >
+            <div className="flex items-start gap-3">
+              <div className="text-xl">
+                {success ? "✓" : "!"}
+              </div>
+
+              <div className="flex-1">
+                <div className="font-semibold">
+                  {success ? "Success" : "Error"}
                 </div>
 
-              ))}
+                <div className="text-sm mt-0.5">
+                  {toast.message}
+                </div>
+              </div>
 
+              <button
+                onClick={onClose}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                ×
+              </button>
             </div>
-
-          )}
-
-        </section>
-
-      </main>
-
-    </>
-
-  );
-}
-
-
-/* ======================================================
-   MAIN APP
-====================================================== */
-
-function App() {
-
-  const [user, setUser] =
-    useState(null);
-
-  const [mode, setMode] =
-    useState("login");
-
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [members, setMembers] =
-    useState([]);
-
-  const [entries, setEntries] =
-    useState([]);
-
-  const [currentMember, setCurrentMember] =
-    useState(null);
-
-
-  /*
-  ========================================================
-  LOAD ALL DATA - ADMIN
-  ========================================================
-  */
-
-  async function loadAdminData() {
-
-    if (!database) {
-      return;
-    }
-
-
-    const membersSnapshot =
-      await database.ref("members").once("value");
-
-
-    const membersObject =
-      membersSnapshot.val() || {};
-
-
-    const memberArray =
-      Object.entries(membersObject)
-        .map(([id, data]) => ({
-          id,
-          ...data
-        }))
-        .sort(
-          (a, b) =>
-            String(a.name || "")
-              .localeCompare(
-                String(b.name || "")
-              )
-        );
-
-
-    const entriesSnapshot =
-      await database.ref("entries").once("value");
-
-
-    const entriesObject =
-      entriesSnapshot.val() || {};
-
-
-    const entryArray =
-      Object.entries(entriesObject)
-        .map(([id, data]) => ({
-          id,
-          ...data
-        }))
-        .sort(
-          (a, b) =>
-            Number(b.createdAt || 0) -
-            Number(a.createdAt || 0)
-        );
-
-
-    setMembers(memberArray);
-    setEntries(entryArray);
-  }
-
-
-  /*
-  ========================================================
-  LOAD MEMBER DATA
-  ========================================================
-  */
-
-  async function loadMemberData(user) {
-
-    const snapshot =
-      await database
-        .ref("members")
-        .orderByChild("email")
-        .equalTo(
-          user.email.toLowerCase()
-        )
-        .once("value");
-
-
-    const data =
-      snapshot.val();
-
-
-    if (!data) {
-
-      setError(
-        "Is email ke liye member account nahi mila."
+          </div>
+        </div>
       );
-
-      return;
     }
 
+    /* =========================================================
+       LOGIN
+       ========================================================= */
 
-    const first =
-      Object.entries(data)[0];
+    function LoginScreen({ onToast }) {
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [showPassword, setShowPassword] = useState(false);
+      const [loading, setLoading] = useState(false);
 
+      async function handleLogin(event) {
+        event.preventDefault();
 
-    const member = {
-      id: first[0],
-      ...first[1]
-    };
+        const cleanEmail = normalizeEmail(email);
 
-
-    setCurrentMember(member);
-
-
-    const entriesSnapshot =
-      await database
-        .ref("entries")
-        .orderByChild("memberId")
-        .equalTo(member.id)
-        .once("value");
-
-
-    const entriesObject =
-      entriesSnapshot.val() || {};
-
-
-    const memberEntries =
-      Object.entries(entriesObject)
-        .map(([id, data]) => ({
-          id,
-          ...data
-        }))
-        .sort(
-          (a, b) =>
-            Number(b.createdAt || 0) -
-            Number(a.createdAt || 0)
-        );
-
-
-    setEntries(memberEntries);
-
-    setMode("member");
-  }
-
-
-  /*
-  ========================================================
-  REALTIME LISTENERS
-  ========================================================
-  */
-
-  useEffect(() => {
-
-    if (!auth || !database) {
-      return;
-    }
-
-
-    const unsubscribe =
-      auth.onAuthStateChanged(async currentUser => {
-
-        setUser(currentUser);
-
-
-        if (!currentUser) {
-
-          setMode("login");
-          setMembers([]);
-          setEntries([]);
-          setCurrentMember(null);
-
+        if (!cleanEmail) {
+          onToast("error", "Email enter kijiye.");
           return;
         }
 
-
-        try {
-
-          const currentEmail =
-            currentUser.email
-              .toLowerCase();
-
-
-          const adminEmail =
-            ADMIN_EMAIL
-              .trim()
-              .toLowerCase();
-
-
-          if (
-            adminEmail &&
-            currentEmail === adminEmail
-          ) {
-
-            setMode("admin");
-
-
-            /*
-            Realtime members listener
-            */
-
-            const membersRef =
-              database.ref("members");
-
-
-            const entriesRef =
-              database.ref("entries");
-
-
-            const membersHandler =
-              snapshot => {
-
-                const object =
-                  snapshot.val() || {};
-
-
-                const array =
-                  Object.entries(object)
-                    .map(([id, data]) => ({
-                      id,
-                      ...data
-                    }))
-                    .sort(
-                      (a, b) =>
-                        String(a.name || "")
-                          .localeCompare(
-                            String(b.name || "")
-                          )
-                    );
-
-
-                setMembers(array);
-              };
-
-
-            const entriesHandler =
-              snapshot => {
-
-                const object =
-                  snapshot.val() || {};
-
-
-                const array =
-                  Object.entries(object)
-                    .map(([id, data]) => ({
-                      id,
-                      ...data
-                    }))
-                    .sort(
-                      (a, b) =>
-                        Number(b.createdAt || 0) -
-                        Number(a.createdAt || 0)
-                    );
-
-
-                setEntries(array);
-              };
-
-
-            membersRef.on(
-              "value",
-              membersHandler
-            );
-
-
-            entriesRef.on(
-              "value",
-              entriesHandler
-            );
-
-
-            return;
-          }
-
-
-          /*
-          Member
-          */
-
-          await loadMemberData(
-            currentUser
-          );
-
-
-        } catch (error) {
-
-          setError(error.message);
-
+        if (!password) {
+          onToast("error", "Password enter kijiye.");
+          return;
         }
 
-      });
+        setLoading(true);
 
-
-    return () => {
-
-      unsubscribe();
-
-      if (database) {
-
-        database
-          .ref("members")
-          .off();
-
-        database
-          .ref("entries")
-          .off();
-
+        try {
+          await auth.signInWithEmailAndPassword(
+            cleanEmail,
+            password
+          );
+        } catch (error) {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        } finally {
+          setLoading(false);
+        }
       }
 
-    };
+      return (
+        <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-slate-900 text-white text-3xl shadow-xl mb-4">
+                ₹
+              </div>
 
-  }, []);
+              <h1 className="text-3xl font-black text-slate-900">
+                Digital Khata
+              </h1>
 
+              <p className="text-slate-500 mt-2">
+                Hisaab-Kitaab Management System
+              </p>
+            </div>
 
-  /*
-  ========================================================
-  LOGIN
-  ========================================================
-  */
+            <div className="bg-white rounded-3xl p-6 sm:p-8 card-shadow border border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900">
+                Login
+              </h2>
 
-  async function handleLogin(event) {
+              <p className="text-sm text-slate-500 mt-1 mb-6">
+                Apne account se login kijiye.
+              </p>
 
-    event.preventDefault();
+              <form
+                onSubmit={handleLogin}
+                className="space-y-5"
+              >
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Email
+                  </label>
 
-    setError("");
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="example@email.com"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
-    setLoading(true);
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Password
+                  </label>
 
+                  <div className="relative">
+                    <input
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 pr-14 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
 
-    try {
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword(!showPassword)
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 px-2"
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
 
-      await auth.signInWithEmailAndPassword(
-        email.trim().toLowerCase(),
-        password
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-3.5 transition"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="spinner !w-5 !h-5 !border-slate-600 !border-t-white"></span>
+                      Login ho raha hai...
+                    </span>
+                  ) : (
+                    "Login"
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-6 p-4 rounded-2xl bg-blue-50 border border-blue-100 text-sm text-blue-800">
+                <b>Admin:</b> {ADMIN_EMAIL}
+              </div>
+            </div>
+          </div>
+        </div>
       );
-
-    } catch (error) {
-
-      setError(
-        error.message
-          .replace("Firebase: ", "")
-      );
-
-    } finally {
-
-      setLoading(false);
-
     }
 
-  }
+    /* =========================================================
+       HEADER
+       ========================================================= */
 
+    function Header({
+      user,
+      title,
+      subtitle,
+      onLogout
+    }) {
+      return (
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shrink-0">
+                  ₹
+                </div>
 
-  /*
-  ========================================================
-  LOGOUT
-  ========================================================
-  */
+                <div className="min-w-0">
+                  <h1 className="font-black text-slate-900 truncate">
+                    {title}
+                  </h1>
 
-  async function handleLogout() {
+                  <p className="text-xs text-slate-500 truncate">
+                    {subtitle}
+                  </p>
+                </div>
+              </div>
 
-    await auth.signOut();
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:block text-right mr-2">
+                  <div className="text-sm font-bold text-slate-800">
+                    {user?.email}
+                  </div>
 
-    setEmail("");
-    setPassword("");
-    setMembers([]);
-    setEntries([]);
-    setCurrentMember(null);
-  }
+                  <div className="text-xs text-slate-500">
+                    {normalizeEmail(user?.email) ===
+                    ADMIN_EMAIL
+                      ? "Administrator"
+                      : "Member"}
+                  </div>
+                </div>
 
+                <button
+                  onClick={onLogout}
+                  className="rounded-xl px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+      );
+    }
 
-  /*
-  ========================================================
-  RELOAD
-  ========================================================
-  */
+    /* =========================================================
+       STAT CARD
+       ========================================================= */
 
-  async function reload() {
+    function StatCard({
+      title,
+      value,
+      subtitle,
+      icon,
+      type = "normal"
+    }) {
+      const classes = {
+        normal: "bg-white border-slate-200",
+        green: "bg-emerald-50 border-emerald-100",
+        red: "bg-red-50 border-red-100",
+        blue: "bg-blue-50 border-blue-100"
+      };
 
-    await loadAdminData();
+      return (
+        <div
+          className={
+            "rounded-3xl p-5 border card-shadow " +
+            classes[type]
+          }
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-slate-500 font-semibold">
+                {title}
+              </p>
 
-  }
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                {value}
+              </p>
 
+              {subtitle && (
+                <p className="text-xs text-slate-500 mt-2">
+                  {subtitle}
+                </p>
+              )}
+            </div>
 
-  /*
-  ========================================================
-  RENDER
-  ========================================================
-  */
+            <div className="w-11 h-11 rounded-2xl bg-white/80 flex items-center justify-center text-xl">
+              {icon}
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-  if (!firebaseConfigured) {
+    /* =========================================================
+       ADD MEMBER MODAL
+       ========================================================= */
 
-    return <SetupScreen />;
+    function AddMemberModal({
+      onClose,
+      onSave,
+      saving
+    }) {
+      const [form, setForm] = useState({
+        uid: "",
+        name: "",
+        email: "",
+        phone: ""
+      });
 
-  }
+      function update(key, value) {
+        setForm(prev => ({
+          ...prev,
+          [key]: value
+        }));
+      }
 
+      function submit(event) {
+        event.preventDefault();
 
-  if (!user) {
+        if (!form.uid.trim()) {
+          alert("Firebase Auth UID enter kijiye.");
+          return;
+        }
 
-    return (
+        if (!form.name.trim()) {
+          alert("Member name enter kijiye.");
+          return;
+        }
 
-      <LoginScreen
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        onLogin={handleLogin}
-        loading={loading}
-        error={error}
-      />
+        if (!form.email.trim()) {
+          alert("Member email enter kijiye.");
+          return;
+        }
 
+        onSave({
+          uid: form.uid.trim(),
+          name: form.name.trim(),
+          email: normalizeEmail(form.email),
+          phone: form.phone.trim()
+        });
+      }
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black">
+                  Add New Member
+                </h3>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  Member ki profile add karein.
+                </p>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200"
+              >
+                ×
+              </button>
+            </div>
+
+            <form
+              onSubmit={submit}
+              className="p-5 space-y-4"
+            >
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+                <b>Important:</b> UID wahi hona chahiye jo
+                Firebase Authentication mein member ke account
+                ka UID hai.
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Firebase Auth UID *
+                </label>
+
+                <input
+                  value={form.uid}
+                  onChange={e =>
+                    update("uid", e.target.value)
+                  }
+                  placeholder="Firebase Authentication UID"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Member Name *
+                </label>
+
+                <input
+                  value={form.name}
+                  onChange={e =>
+                    update("name", e.target.value)
+                  }
+                  placeholder="Rahul Kumar"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Member Email *
+                </label>
+
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={e =>
+                    update("email", e.target.value)
+                  }
+                  placeholder="member@email.com"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  WhatsApp Number
+                </label>
+
+                <input
+                  value={form.phone}
+                  onChange={e =>
+                    update("phone", e.target.value)
+                  }
+                  placeholder="9876543210"
+                  inputMode="tel"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+
+                <p className="text-xs text-slate-500 mt-1">
+                  India number 10 digit bhi enter kar sakte hain.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 rounded-2xl py-3 bg-slate-100 hover:bg-slate-200 font-bold"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 rounded-2xl py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Add Member"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    /* =========================================================
+       ADD ENTRY MODAL
+       ========================================================= */
+
+    function AddEntryModal({
+      members,
+      onClose,
+      onSave,
+      saving
+    }) {
+      const [form, setForm] = useState({
+        memberUid: "",
+        amount: "",
+        type: "given",
+        note: ""
+      });
+
+      function update(key, value) {
+        setForm(prev => ({
+          ...prev,
+          [key]: value
+        }));
+      }
+
+      function submit(event) {
+        event.preventDefault();
+
+        const amount = Number(form.amount);
+
+        if (!form.memberUid) {
+          alert("Member select kijiye.");
+          return;
+        }
+
+        if (!amount || amount <= 0) {
+          alert("Valid amount enter kijiye.");
+          return;
+        }
+
+        onSave({
+          memberUid: form.memberUid,
+          amount,
+          type: form.type,
+          note: form.note.trim()
+        });
+      }
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black">
+                  Add Hisaab Entry
+                </h3>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  Naya transaction add karein.
+                </p>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200"
+              >
+                ×
+              </button>
+            </div>
+
+            <form
+              onSubmit={submit}
+              className="p-5 space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Member *
+                </label>
+
+                <select
+                  value={form.memberUid}
+                  onChange={e =>
+                    update("memberUid", e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">
+                    Member select karein
+                  </option>
+
+                  {members.map(member => (
+                    <option
+                      key={member.uid}
+                      value={member.uid}
+                    >
+                      {member.name} — {member.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Amount *
+                </label>
+
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={form.amount}
+                  onChange={e =>
+                    update("amount", e.target.value)
+                  }
+                  placeholder="1000"
+                  inputMode="decimal"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Transaction Type *
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update("type", "given")
+                    }
+                    className={
+                      "rounded-2xl p-4 border text-left " +
+                      (form.type === "given"
+                        ? "border-red-400 bg-red-50"
+                        : "border-slate-200 bg-white")
+                    }
+                  >
+                    <div className="font-black text-red-600">
+                      Maine diye
+                    </div>
+
+                    <div className="text-xs text-slate-500 mt-1">
+                      Member ko paise diye
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update("type", "received")
+                    }
+                    className={
+                      "rounded-2xl p-4 border text-left " +
+                      (form.type === "received"
+                        ? "border-emerald-400 bg-emerald-50"
+                        : "border-slate-200 bg-white")
+                    }
+                  >
+                    <div className="font-black text-emerald-600">
+                      Mujhe mile
+                    </div>
+
+                    <div className="text-xs text-slate-500 mt-1">
+                      Member se paise mile
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Note
+                </label>
+
+                <textarea
+                  rows="3"
+                  value={form.note}
+                  onChange={e =>
+                    update("note", e.target.value)
+                  }
+                  placeholder="Transaction ka note..."
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 rounded-2xl py-3 bg-slate-100 hover:bg-slate-200 font-bold"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 rounded-2xl py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Save Entry"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    /* =========================================================
+       ADMIN DASHBOARD
+       ========================================================= */
+
+    function AdminDashboard({
+      user,
+      onLogout,
+      onToast
+    }) {
+      const [members, setMembers] = useState([]);
+      const [entries, setEntries] = useState([]);
+
+      const [loading, setLoading] = useState(true);
+      const [memberModal, setMemberModal] = useState(false);
+      const [entryModal, setEntryModal] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [search, setSearch] = useState("");
+
+      const [activeTab, setActiveTab] =
+        useState("members");
+
+      /* -----------------------------------------
+         REALTIME MEMBERS
+         ----------------------------------------- */
+
+      useEffect(() => {
+        const ref = db.ref("members");
+
+        const handler = snapshot => {
+          const data = snapshot.val() || {};
+
+          const list = Object.entries(data)
+            .map(([uid, value]) => ({
+              uid,
+              ...value
+            }))
+            .sort((a, b) =>
+              String(a.name || "").localeCompare(
+                String(b.name || "")
+              )
+            );
+
+          setMembers(list);
+          setLoading(false);
+        };
+
+        const errorHandler = error => {
+          setLoading(false);
+
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        };
+
+        ref.on("value", handler, errorHandler);
+
+        return () => {
+          ref.off("value", handler);
+        };
+      }, []);
+
+      /* -----------------------------------------
+         REALTIME ENTRIES
+         ----------------------------------------- */
+
+      useEffect(() => {
+        const ref = db.ref("entries");
+
+        const handler = snapshot => {
+          const data = snapshot.val() || {};
+
+          const list = Object.entries(data)
+            .map(([id, value]) => ({
+              id,
+              ...value
+            }))
+            .sort(
+              (a, b) =>
+                Number(b.createdAt || 0) -
+                Number(a.createdAt || 0)
+            );
+
+          setEntries(list);
+        };
+
+        const errorHandler = error => {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        };
+
+        ref.on("value", handler, errorHandler);
+
+        return () => {
+          ref.off("value", handler);
+        };
+      }, []);
+
+      /* -----------------------------------------
+         MEMBER SUMMARIES
+         ----------------------------------------- */
+
+      const memberSummaries = useMemo(() => {
+        const result = {};
+
+        members.forEach(member => {
+          result[member.uid] =
+            calculateSummary(
+              entries.filter(
+                entry =>
+                  entry.memberUid === member.uid
+              )
+            );
+        });
+
+        return result;
+      }, [members, entries]);
+
+      /* -----------------------------------------
+         GLOBAL STATS
+         ----------------------------------------- */
+
+      const totalGiven = entries
+        .filter(e => e.type === "given")
+        .reduce(
+          (sum, e) => sum + Number(e.amount || 0),
+          0
+        );
+
+      const totalReceived = entries
+        .filter(e => e.type === "received")
+        .reduce(
+          (sum, e) => sum + Number(e.amount || 0),
+          0
+        );
+
+      const totalBalance =
+        totalGiven - totalReceived;
+
+      const filteredMembers = members.filter(
+        member => {
+          const text = search
+            .trim()
+            .toLowerCase();
+
+          if (!text) return true;
+
+          return (
+            String(member.name || "")
+              .toLowerCase()
+              .includes(text) ||
+            String(member.email || "")
+              .toLowerCase()
+              .includes(text) ||
+            String(member.phone || "")
+              .includes(text)
+          );
+        }
+      );
+
+      /* -----------------------------------------
+         ADD MEMBER
+         ----------------------------------------- */
+
+      async function saveMember(form) {
+        setSaving(true);
+
+        try {
+          const memberRef =
+            db.ref("members/" + form.uid);
+
+          const existing =
+            await memberRef.once("value");
+
+          if (existing.exists()) {
+            throw new Error(
+              "Is UID ka member already exist karta hai."
+            );
+          }
+
+          await memberRef.set({
+            name: form.name,
+            email: normalizeEmail(form.email),
+            phone: form.phone || "",
+            createdAt: Date.now(),
+            createdBy: normalizeEmail(
+              user.email
+            )
+          });
+
+          setMemberModal(false);
+
+          onToast(
+            "success",
+            "Member successfully add ho gaya."
+          );
+        } catch (error) {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        } finally {
+          setSaving(false);
+        }
+      }
+
+      /* -----------------------------------------
+         ADD ENTRY
+         ----------------------------------------- */
+
+      async function saveEntry(form) {
+        setSaving(true);
+
+        try {
+          const ref = db.ref("entries").push();
+
+          await ref.set({
+            memberUid: form.memberUid,
+            amount: Number(form.amount),
+            type: form.type,
+            note: form.note || "",
+            createdAt: Date.now(),
+            createdBy: normalizeEmail(
+              user.email
+            )
+          });
+
+          setEntryModal(false);
+
+          onToast(
+            "success",
+            "Hisaab entry successfully save ho gayi."
+          );
+        } catch (error) {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        } finally {
+          setSaving(false);
+        }
+      }
+
+      /* -----------------------------------------
+         DELETE ENTRY
+         ----------------------------------------- */
+
+      async function deleteEntry(entry) {
+        const ok = window.confirm(
+          "Kya aap is transaction ko delete karna chahte hain?"
+        );
+
+        if (!ok) return;
+
+        try {
+          await db
+            .ref("entries/" + entry.id)
+            .remove();
+
+          onToast(
+            "success",
+            "Transaction delete ho gaya."
+          );
+        } catch (error) {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        }
+      }
+
+      /* -----------------------------------------
+         DELETE MEMBER
+         ----------------------------------------- */
+
+      async function deleteMember(member) {
+        const summary =
+          memberSummaries[member.uid] ||
+          calculateSummary([]);
+
+        const ok = window.confirm(
+          `${member.name} ko delete karna hai?\n\nIs member ka profile delete hoga. Existing ledger entries alag se delete karni hongi.`
+        );
+
+        if (!ok) return;
+
+        try {
+          await db
+            .ref("members/" + member.uid)
+            .remove();
+
+          onToast(
+            "success",
+            "Member profile delete ho gayi."
+          );
+        } catch (error) {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        }
+      }
+
+      /* -----------------------------------------
+         MEMBER NAME
+         ----------------------------------------- */
+
+      function memberName(uid) {
+        const member = members.find(
+          m => m.uid === uid
+        );
+
+        return member?.name || "Unknown Member";
+      }
+
+      if (loading) {
+        return <LoadingScreen text="Dashboard load ho raha hai..." />;
+      }
+
+      return (
+        <div className="min-h-screen gradient-bg">
+          <Header
+            user={user}
+            title="Admin Dashboard"
+            subtitle="Digital Khata Management"
+            onLogout={onLogout}
+          />
+
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+            {/* PAGE TITLE */}
+
+            <div className="mb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+                    Hisaab Overview
+                  </h2>
+
+                  <p className="text-slate-500 mt-1">
+                    Members aur transactions ko manage karein.
+                  </p>
+                </div>
+
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() =>
+                      setMemberModal(true)
+                    }
+                    className="rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-3"
+                  >
+                    + Member
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setEntryModal(true)
+                    }
+                    disabled={members.length === 0}
+                    className="rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-3 disabled:opacity-40"
+                  >
+                    + Hisaab
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* STATS */}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard
+                title="Total Members"
+                value={members.length}
+                subtitle="Active member profiles"
+                icon="👥"
+                type="blue"
+              />
+
+              <StatCard
+                title="Maine Diye"
+                value={money(totalGiven)}
+                subtitle="Total amount given"
+                icon="↗"
+                type="red"
+              />
+
+              <StatCard
+                title="Mujhe Mile"
+                value={money(totalReceived)}
+                subtitle="Total amount received"
+                icon="↙"
+                type="green"
+              />
+
+              <StatCard
+                title="Net Balance"
+                value={money(Math.abs(totalBalance))}
+                subtitle={
+                  totalBalance > 0
+                    ? "Lena hai"
+                    : totalBalance < 0
+                    ? "Dena hai"
+                    : "Barabar"
+                }
+                icon="₹"
+                type="normal"
+              />
+            </div>
+
+            {/* TABS */}
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-1.5 flex gap-1 mb-5 overflow-x-auto">
+              <button
+                onClick={() =>
+                  setActiveTab("members")
+                }
+                className={
+                  "px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap " +
+                  (activeTab === "members"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-600 hover:bg-slate-100")
+                }
+              >
+                Members
+              </button>
+
+              <button
+                onClick={() =>
+                  setActiveTab("ledger")
+                }
+                className={
+                  "px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap " +
+                  (activeTab === "ledger"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-600 hover:bg-slate-100")
+                }
+              >
+                Ledger
+              </button>
+            </div>
+
+            {/* MEMBERS */}
+
+            {activeTab === "members" && (
+              <section className="fade-in">
+                <div className="bg-white rounded-3xl border border-slate-200 card-shadow overflow-hidden">
+                  <div className="p-5 border-b border-slate-100">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-xl font-black">
+                          Members
+                        </h3>
+
+                        <p className="text-sm text-slate-500 mt-1">
+                          Har member ka current balance.
+                        </p>
+                      </div>
+
+                      <input
+                        value={search}
+                        onChange={e =>
+                          setSearch(e.target.value)
+                        }
+                        placeholder="Search member..."
+                        className="w-full sm:w-72 rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {filteredMembers.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <div className="text-4xl mb-3">
+                        👥
+                      </div>
+
+                      <h4 className="font-bold text-slate-800">
+                        Koi member nahi mila
+                      </h4>
+
+                      <p className="text-sm text-slate-500 mt-1">
+                        Pehle ek member add kijiye.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {filteredMembers.map(member => {
+                        const summary =
+                          memberSummaries[
+                            member.uid
+                          ] ||
+                          calculateSummary([]);
+
+                        const whatsapp =
+                          generateWhatsAppLink(
+                            member,
+                            summary
+                          );
+
+                        return (
+                          <div
+                            key={member.uid}
+                            className="p-5 hover:bg-slate-50 transition"
+                          >
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black shrink-0">
+                                  {getInitials(
+                                    member.name
+                                  )}
+                                </div>
+
+                                <div className="min-w-0">
+                                  <h4 className="font-black text-slate-900 truncate">
+                                    {member.name}
+                                  </h4>
+
+                                  <p className="text-sm text-slate-500 truncate">
+                                    {member.email}
+                                  </p>
+
+                                  {member.phone && (
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                      {member.phone}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-3 lg:w-[420px]">
+                                <div className="rounded-2xl bg-red-50 p-3">
+                                  <p className="text-[11px] text-red-600 font-bold">
+                                    DIYE
+                                  </p>
+
+                                  <p className="font-black text-red-700 mt-1">
+                                    {money(
+                                      summary.given
+                                    )}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-2xl bg-emerald-50 p-3">
+                                  <p className="text-[11px] text-emerald-600 font-bold">
+                                    MILE
+                                  </p>
+
+                                  <p className="font-black text-emerald-700 mt-1">
+                                    {money(
+                                      summary.received
+                                    )}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-2xl bg-slate-100 p-3">
+                                  <p className="text-[11px] text-slate-500 font-bold">
+                                    BALANCE
+                                  </p>
+
+                                  <p className="font-black text-slate-900 mt-1">
+                                    {money(
+                                      Math.abs(
+                                        summary.balance
+                                      )
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                {whatsapp && (
+                                  <a
+                                    href={whatsapp}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="rounded-xl px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold"
+                                  >
+                                    WhatsApp
+                                  </a>
+                                )}
+
+                                <button
+                                  onClick={() => {
+                                    setEntryModal(
+                                      true
+                                    );
+                                  }}
+                                  className="rounded-xl px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-bold"
+                                >
+                                  + Entry
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    deleteMember(
+                                      member
+                                    )
+                                  }
+                                  className="rounded-xl px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-bold"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 text-xs font-semibold">
+                              {summary.balance > 0 ? (
+                                <span className="text-red-600">
+                                  Member ko{" "}
+                                  {money(
+                                    summary.balance
+                                  )}{" "}
+                                  dene hain.
+                                </span>
+                              ) : summary.balance <
+                                0 ? (
+                                <span className="text-emerald-600">
+                                  Member se{" "}
+                                  {money(
+                                    Math.abs(
+                                      summary.balance
+                                    )
+                                  )}{" "}
+                                  lene hain.
+                                </span>
+                              ) : (
+                                <span className="text-slate-500">
+                                  Hisaab barabar hai.
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* LEDGER */}
+
+            {activeTab === "ledger" && (
+              <section className="fade-in">
+                <div className="bg-white rounded-3xl border border-slate-200 card-shadow overflow-hidden">
+                  <div className="p-5 border-b border-slate-100">
+                    <h3 className="text-xl font-black">
+                      Complete Ledger
+                    </h3>
+
+                    <p className="text-sm text-slate-500 mt-1">
+                      Sabhi transactions realtime update hote hain.
+                    </p>
+                  </div>
+
+                  {entries.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <div className="text-4xl mb-3">
+                        ₹
+                      </div>
+
+                      <h4 className="font-bold">
+                        Abhi koi transaction nahi hai
+                      </h4>
+
+                      <p className="text-sm text-slate-500 mt-1">
+                        + Hisaab se pehli entry add karein.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[850px]">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="text-left px-5 py-3 text-xs font-black text-slate-500 uppercase">
+                              Date
+                            </th>
+
+                            <th className="text-left px-5 py-3 text-xs font-black text-slate-500 uppercase">
+                              Member
+                            </th>
+
+                            <th className="text-left px-5 py-3 text-xs font-black text-slate-500 uppercase">
+                              Type
+                            </th>
+
+                            <th className="text-left px-5 py-3 text-xs font-black text-slate-500 uppercase">
+                              Amount
+                            </th>
+
+                            <th className="text-left px-5 py-3 text-xs font-black text-slate-500 uppercase">
+                              Note
+                            </th>
+
+                            <th className="text-right px-5 py-3 text-xs font-black text-slate-500 uppercase">
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100">
+                          {entries.map(entry => (
+                            <tr
+                              key={entry.id}
+                              className="hover:bg-slate-50"
+                            >
+                              <td className="px-5 py-4 text-sm text-slate-600">
+                                {formatDate(
+                                  entry.createdAt
+                                )}
+                              </td>
+
+                              <td className="px-5 py-4">
+                                <div className="font-bold text-slate-900">
+                                  {memberName(
+                                    entry.memberUid
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="px-5 py-4">
+                                {entry.type ===
+                                "given" ? (
+                                  <span className="inline-flex rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-black">
+                                    Maine diye
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-black">
+                                    Mujhe mile
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-5 py-4 font-black">
+                                {money(
+                                  entry.amount
+                                )}
+                              </td>
+
+                              <td className="px-5 py-4 text-sm text-slate-500 max-w-xs">
+                                {entry.note || "-"}
+                              </td>
+
+                              <td className="px-5 py-4 text-right">
+                                <button
+                                  onClick={() =>
+                                    deleteEntry(
+                                      entry
+                                    )
+                                  }
+                                  className="rounded-xl px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+          </main>
+
+          {memberModal && (
+            <AddMemberModal
+              onClose={() =>
+                setMemberModal(false)
+              }
+              onSave={saveMember}
+              saving={saving}
+            />
+          )}
+
+          {entryModal && (
+            <AddEntryModal
+              members={members}
+              onClose={() =>
+                setEntryModal(false)
+              }
+              onSave={saveEntry}
+              saving={saving}
+            />
+          )}
+        </div>
+      );
+    }
+
+    /* =========================================================
+       MEMBER PASSBOOK
+       ========================================================= */
+
+    function MemberPassbook({
+      user,
+      onLogout,
+      onToast
+    }) {
+      const [member, setMember] = useState(null);
+      const [entries, setEntries] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [notFound, setNotFound] = useState(false);
+
+      /* -----------------------------------------
+         MEMBER PROFILE REALTIME
+         ----------------------------------------- */
+
+      useEffect(() => {
+        if (!user?.uid) return;
+
+        const ref = db.ref(
+          "members/" + user.uid
+        );
+
+        const handler = snapshot => {
+          const value = snapshot.val();
+
+          if (!value) {
+            setMember(null);
+            setNotFound(true);
+          } else {
+            setMember({
+              uid: user.uid,
+              ...value
+            });
+
+            setNotFound(false);
+          }
+
+          setLoading(false);
+        };
+
+        const errorHandler = error => {
+          setLoading(false);
+
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        };
+
+        ref.on("value", handler, errorHandler);
+
+        return () => {
+          ref.off("value", handler);
+        };
+      }, [user?.uid]);
+
+      /* -----------------------------------------
+         MEMBER ENTRIES
+         ----------------------------------------- */
+
+      useEffect(() => {
+        if (!user?.uid) return;
+
+        const ref = db.ref("entries");
+
+        const handler = snapshot => {
+          const data = snapshot.val() || {};
+
+          const list = Object.entries(data)
+            .map(([id, value]) => ({
+              id,
+              ...value
+            }))
+            .filter(
+              entry =>
+                entry.memberUid === user.uid
+            )
+            .sort(
+              (a, b) =>
+                Number(b.createdAt || 0) -
+                Number(a.createdAt || 0)
+            );
+
+          setEntries(list);
+        };
+
+        const errorHandler = error => {
+          onToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        };
+
+        ref.on("value", handler, errorHandler);
+
+        return () => {
+          ref.off("value", handler);
+        };
+      }, [user?.uid]);
+
+      const summary =
+        calculateSummary(entries);
+
+      if (loading) {
+        return (
+          <LoadingScreen text="Aapki passbook load ho rahi hai..." />
+        );
+      }
+
+      if (notFound) {
+        return (
+          <div className="min-h-screen gradient-bg">
+            <Header
+              user={user}
+              title="Digital Khata"
+              subtitle="Member Passbook"
+              onLogout={onLogout}
+            />
+
+            <main className="max-w-xl mx-auto px-4 py-12">
+              <div className="bg-white rounded-3xl p-8 card-shadow text-center">
+                <div className="text-5xl mb-4">
+                  ⚠️
+                </div>
+
+                <h2 className="text-xl font-black">
+                  Member Profile Nahi Mila
+                </h2>
+
+                <p className="text-slate-500 mt-2">
+                  Aapka Firebase Auth UID admin ne
+                  members list mein add nahi kiya hai.
+                </p>
+              </div>
+            </main>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen gradient-bg">
+          <Header
+            user={user}
+            title="My Passbook"
+            subtitle={member?.name || "Member"}
+            onLogout={onLogout}
+          />
+
+          <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+            {/* PROFILE */}
+
+            <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 mb-5 overflow-hidden relative">
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/20 rounded-full blur-2xl"></div>
+              <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl"></div>
+
+              <div className="relative">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="w-16 h-16 rounded-3xl bg-white/10 border border-white/10 flex items-center justify-center text-2xl font-black">
+                    {getInitials(
+                      member?.name
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-slate-400 text-sm">
+                      Welcome
+                    </p>
+
+                    <h2 className="text-2xl sm:text-3xl font-black">
+                      {member?.name}
+                    </h2>
+
+                    <p className="text-slate-400 text-sm mt-1">
+                      {member?.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SUMMARY */}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+              <StatCard
+                title="Maine Diye"
+                value={money(summary.given)}
+                subtitle="Total given"
+                icon="↗"
+                type="red"
+              />
+
+              <StatCard
+                title="Mujhe Mile"
+                value={money(summary.received)}
+                subtitle="Total received"
+                icon="↙"
+                type="green"
+              />
+
+              <StatCard
+                title={
+                  summary.balance > 0
+                    ? "Dene Hain"
+                    : summary.balance < 0
+                    ? "Lene Hain"
+                    : "Balance"
+                }
+                value={money(
+                  Math.abs(
+                    summary.balance
+                  )
+                )}
+                subtitle={
+                  summary.balance === 0
+                    ? "Hisaab barabar"
+                    : summary.balance > 0
+                    ? "Aapko dene hain"
+                    : "Aapko lene hain"
+                }
+                icon="₹"
+                type="blue"
+              />
+            </div>
+
+            {/* STATUS */}
+
+            <div
+              className={
+                "rounded-3xl p-5 mb-5 border " +
+                (summary.balance > 0
+                  ? "bg-red-50 border-red-100"
+                  : summary.balance < 0
+                  ? "bg-emerald-50 border-emerald-100"
+                  : "bg-slate-50 border-slate-200")
+              }
+            >
+              {summary.balance > 0 ? (
+                <p className="font-bold text-red-700">
+                  Aapko{" "}
+                  {money(
+                    summary.balance
+                  )}{" "}
+                  dene hain.
+                </p>
+              ) : summary.balance < 0 ? (
+                <p className="font-bold text-emerald-700">
+                  Aapko{" "}
+                  {money(
+                    Math.abs(
+                      summary.balance
+                    )
+                  )}{" "}
+                  lene hain.
+                </p>
+              ) : (
+                <p className="font-bold text-slate-700">
+                  Aapka hisaab bilkul barabar hai.
+                </p>
+              )}
+            </div>
+
+            {/* PASSBOOK */}
+
+            <div className="bg-white rounded-3xl border border-slate-200 card-shadow overflow-hidden">
+              <div className="p-5 border-b border-slate-100">
+                <h3 className="text-xl font-black">
+                  My Passbook
+                </h3>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  Transactions realtime update hote hain.
+                </p>
+              </div>
+
+              {entries.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="text-5xl mb-3">
+                    📒
+                  </div>
+
+                  <h4 className="font-black text-slate-800">
+                    Abhi koi transaction nahi hai
+                  </h4>
+
+                  <p className="text-sm text-slate-500 mt-1">
+                    Aapka ledger yahan dikhega.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {entries.map(entry => (
+                    <div
+                      key={entry.id}
+                      className="p-5 hover:bg-slate-50 transition"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex gap-3 min-w-0">
+                          <div
+                            className={
+                              "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 font-black " +
+                              (entry.type ===
+                              "given"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-emerald-100 text-emerald-700")
+                            }
+                          >
+                            {entry.type ===
+                            "given"
+                              ? "↑"
+                              : "↓"}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="font-black text-slate-900">
+                              {entry.type ===
+                              "given"
+                                ? "Maine diye"
+                                : "Mujhe mile"}
+                            </div>
+
+                            <div className="text-xs text-slate-500 mt-1">
+                              {formatDate(
+                                entry.createdAt
+                              )}
+                            </div>
+
+                            {entry.note && (
+                              <div className="text-sm text-slate-600 mt-2 break-words">
+                                {entry.note}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          className={
+                            "font-black whitespace-nowrap " +
+                            (entry.type ===
+                            "given"
+                              ? "text-red-600"
+                              : "text-emerald-600")
+                          }
+                        >
+                          {entry.type ===
+                          "given"
+                            ? "-"
+                            : "+"}
+                          {money(entry.amount)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    /* =========================================================
+       APP
+       ========================================================= */
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] =
+        useState(true);
+
+      const [toast, setToast] =
+        useState(null);
+
+      function showToast(type, message) {
+        setToast({
+          type,
+          message
+        });
+
+        window.clearTimeout(
+          showToast.timeout
+        );
+
+        showToast.timeout =
+          window.setTimeout(() => {
+            setToast(null);
+          }, 4000);
+      }
+
+      useEffect(() => {
+        const unsubscribe =
+          auth.onAuthStateChanged(
+            currentUser => {
+              setUser(currentUser);
+              setAuthLoading(false);
+            }
+          );
+
+        return unsubscribe;
+      }, []);
+
+      async function logout() {
+        try {
+          await auth.signOut();
+
+          showToast(
+            "success",
+            "Logout successful."
+          );
+        } catch (error) {
+          showToast(
+            "error",
+            friendlyFirebaseError(error)
+          );
+        }
+      }
+
+      if (authLoading) {
+        return (
+          <LoadingScreen text="Digital Khata start ho raha hai..." />
+        );
+      }
+
+      if (!user) {
+        return (
+          <>
+            <LoginScreen
+              onToast={showToast}
+            />
+
+            <Toast
+              toast={toast}
+              onClose={() =>
+                setToast(null)
+              }
+            />
+          </>
+        );
+      }
+
+      const isAdmin =
+        normalizeEmail(user.email) ===
+        ADMIN_EMAIL;
+
+      return (
+        <>
+          {isAdmin ? (
+            <AdminDashboard
+              user={user}
+              onLogout={logout}
+              onToast={showToast}
+            />
+          ) : (
+            <MemberPassbook
+              user={user}
+              onLogout={logout}
+              onToast={showToast}
+            />
+          )}
+
+          <Toast
+            toast={toast}
+            onClose={() =>
+              setToast(null)
+            }
+          />
+        </>
+      );
+    }
+
+    /* =========================================================
+       START APP
+       ========================================================= */
+
+    ReactDOM.createRoot(
+      document.getElementById("root")
+    ).render(
+      <App />
     );
 
-  }
-
-
-  if (mode === "admin") {
-
-    return (
-
-      <AdminDashboard
-        user={user}
-        members={members}
-        entries={entries}
-        onLogout={handleLogout}
-        reload={reload}
-        error={error}
-        setError={setError}
-      />
-
-    );
-
-  }
-
-
-  if (mode === "member" && currentMember) {
-
-    return (
-
-      <MemberPassbook
-        user={user}
-        member={currentMember}
-        entries={entries}
-        onLogout={handleLogout}
-      />
-
-    );
-
-  }
-
-
-  return (
-
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-slate-500">
-        Loading...
-      </div>
-    </div>
-
-  );
-
-}
-
-
-/* ======================================================
-   START REACT
-====================================================== */
-
-ReactDOM
-  .createRoot(
-    document.getElementById("root")
-  )
-  .render(
-    <App />
-  );
-
-</script>
-
+  </script>
 </body>
 </html>
